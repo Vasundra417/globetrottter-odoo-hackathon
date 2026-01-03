@@ -1,0 +1,1 @@
+# globetrottter-odoo-hackathon
