@@ -1,35 +1,75 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { TripProvider } from './context/TripContext';
+
+// Page imports
+import LoginSignup from './pages/LoginSignup';
+import Dashboard from './pages/Dashboard';
+import CreateTrip from './pages/CreateTrip';
+import ItineraryBuilder from './pages/ItineraryBuilder';
+import ItineraryView from './pages/ItineraryView';
+import Budget from './pages/Budget';
+import AdminDashboard from './pages/AdminDashboard';
+import Navbar from './components/Navbar';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <AuthProvider>
+      <TripProvider>
+        <Router>
+          <div className="app">
+            <Routes>
+              <Route path="/login" element={<LoginSignup />} />
+              
+              <Route path="/dashboard" element={
+                <>
+                  <Navbar />
+                  <Dashboard />
+                </>
+              } />
+              
+              <Route path="/create-trip" element={
+                <>
+                  <Navbar />
+                  <CreateTrip />
+                </>
+              } />
+              
+              <Route path="/trip/:tripId/itinerary" element={
+                <>
+                  <Navbar />
+                  <ItineraryBuilder />
+                </>
+              } />
+              
+              <Route path="/trip/:tripId/view" element={
+                <>
+                  <Navbar />
+                  <ItineraryView />
+                </>
+              } />
+              
+              <Route path="/trip/:tripId/budget" element={
+                <>
+                  <Navbar />
+                  <Budget />
+                </>
+              } />
+              
+              <Route path="/admin" element={
+                <>
+                  <Navbar />
+                  <AdminDashboard />
+                </>
+              } />
+              
+              <Route path="/" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </div>
+        </Router>
+      </TripProvider>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
