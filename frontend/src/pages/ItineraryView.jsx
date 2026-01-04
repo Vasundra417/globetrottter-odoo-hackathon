@@ -167,7 +167,13 @@ export default function ItineraryView() {
 }
 
 const styles = {
-  container: { maxWidth: '1000px', margin: '0 auto', padding: '20px' },
+  container: { 
+    width: '100%',
+    maxWidth: '1000px', 
+    margin: '0 auto', 
+    padding: '20px',
+    boxSizing: 'border-box'
+  },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', borderBottom: '2px solid #007bff', paddingBottom: '20px' },
   subtitle: { margin: '8px 0 0 0', color: '#666' },
   headerActions: { display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' },

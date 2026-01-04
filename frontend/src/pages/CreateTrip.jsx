@@ -1,5 +1,3 @@
-// frontend/src/pages/CreateTrip.jsx
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
@@ -17,9 +15,6 @@ export default function CreateTrip() {
   const { createTrip, isLoading } = useTrip();
   const navigate = useNavigate();
 
-  // ============================================
-  // FORM VALIDATION
-  // ============================================
   const validateForm = () => {
     const newErrors = {};
 
@@ -48,9 +43,6 @@ export default function CreateTrip() {
     return newErrors;
   };
 
-  // ============================================
-  // HANDLE FORM CHANGE
-  // ============================================
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -58,7 +50,6 @@ export default function CreateTrip() {
       [name]: value
     }));
     
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -67,20 +58,15 @@ export default function CreateTrip() {
     }
   };
 
-  // ============================================
-  // HANDLE SUBMIT
-  // ============================================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    // Create trip
     const tripData = {
       name: formData.name,
       description: formData.description,
@@ -92,14 +78,10 @@ export default function CreateTrip() {
     const newTrip = await createTrip(tripData);
 
     if (newTrip) {
-      // Redirect to itinerary builder
       navigate(`/trip/${newTrip.id}/itinerary`);
     }
   };
 
-  // ============================================
-  // CALCULATE TRIP DURATION
-  // ============================================
   const getDuration = () => {
     if (formData.start_date && formData.end_date) {
       const start = new Date(formData.start_date);
@@ -118,7 +100,6 @@ export default function CreateTrip() {
         <h1 style={styles.title}>✈️ Plan Your Next Adventure</h1>
         
         <form onSubmit={handleSubmit} style={styles.form}>
-          {/* Trip Name */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Trip Name *</label>
             <input
@@ -137,7 +118,6 @@ export default function CreateTrip() {
             )}
           </div>
 
-          {/* Description */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Description</label>
             <textarea
@@ -150,7 +130,6 @@ export default function CreateTrip() {
             />
           </div>
 
-          {/* Dates Row */}
           <div style={styles.row}>
             <div style={styles.formGroup}>
               <label style={styles.label}>Start Date *</label>
@@ -187,14 +166,12 @@ export default function CreateTrip() {
             </div>
           </div>
 
-          {/* Duration Display */}
           {duration > 0 && (
             <div style={styles.infoBox}>
               📅 Trip Duration: <strong>{duration} days</strong>
             </div>
           )}
 
-          {/* Budget */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Budget Limit ($)</label>
             <input
@@ -220,7 +197,6 @@ export default function CreateTrip() {
             )}
           </div>
 
-          {/* Buttons */}
           <div style={styles.actions}>
             <button
               type="submit"
@@ -245,9 +221,11 @@ export default function CreateTrip() {
 
 const styles = {
   container: {
+    width: '100%',
     maxWidth: '600px',
     margin: '0 auto',
-    padding: '20px'
+    padding: '20px',
+    boxSizing: 'border-box'
   },
   card: {
     backgroundColor: '#fff',

@@ -1,5 +1,3 @@
-// frontend/src/pages/ItineraryBuilder.jsx
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
@@ -14,9 +12,6 @@ export default function ItineraryBuilder() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // ============================================
-  // NEW STOP FORM STATE
-  // ============================================
   const [newStop, setNewStop] = useState({
     city_name: '',
     country: '',
@@ -27,34 +22,20 @@ export default function ItineraryBuilder() {
     description: ''
   });
 
-  // ============================================
-  // NEW ACTIVITY FORM STATE
-  // ============================================
   const [newActivities, setNewActivities] = useState({});
 
-  // ============================================
-  // LOAD TRIP AND STOPS
-  // ============================================
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      
-      // Get trip
       await getTrip(tripId);
-      
-      // Get stops
       const stopsResponse = await stopService.listStops(tripId);
       setStops(stopsResponse.data || []);
-      
       setLoading(false);
     };
 
     loadData();
   }, [tripId]);
 
-  // ============================================
-  // ADD STOP
-  // ============================================
   const handleAddStop = async (e) => {
     e.preventDefault();
 
@@ -86,9 +67,6 @@ export default function ItineraryBuilder() {
     }
   };
 
-  // ============================================
-  // ADD ACTIVITY
-  // ============================================
   const handleAddActivity = async (stopId, e) => {
     e.preventDefault();
 
@@ -106,7 +84,6 @@ export default function ItineraryBuilder() {
     });
 
     if (result) {
-      // Update stops with new activity
       setStops(stops.map(stop => {
         if (stop.id === stopId) {
           return {
@@ -117,7 +94,6 @@ export default function ItineraryBuilder() {
         return stop;
       }));
 
-      // Clear form
       setNewActivities({
         ...newActivities,
         [stopId]: {}
@@ -129,9 +105,6 @@ export default function ItineraryBuilder() {
     }
   };
 
-  // ============================================
-  // HANDLE ACTIVITY CHANGE
-  // ============================================
   const handleActivityChange = (stopId, field, value) => {
     setNewActivities({
       ...newActivities,
@@ -166,7 +139,6 @@ export default function ItineraryBuilder() {
         </div>
       </div>
 
-      {/* Add Stop Button */}
       {!showAddStop && (
         <button
           onClick={() => setShowAddStop(true)}
@@ -176,7 +148,6 @@ export default function ItineraryBuilder() {
         </button>
       )}
 
-      {/* Add Stop Form */}
       {showAddStop && (
         <div style={styles.formBox}>
           <h3>Add New Stop</h3>
@@ -232,7 +203,6 @@ export default function ItineraryBuilder() {
         </div>
       )}
 
-      {/* Stops List */}
       <div style={styles.stopsList}>
         {stops.length === 0 ? (
           <p style={styles.emptyState}>No stops yet. Add one to get started!</p>
@@ -250,7 +220,6 @@ export default function ItineraryBuilder() {
                 <p style={styles.description}>{stop.description}</p>
               )}
 
-              {/* Activities */}
               <div style={styles.activities}>
                 <h4>🎯 Activities</h4>
                 {stop.activities && stop.activities.length > 0 && (
@@ -265,7 +234,6 @@ export default function ItineraryBuilder() {
                   </ul>
                 )}
 
-                {/* Add Activity Form */}
                 {!showAddActivity[stop.id] && (
                   <button
                     onClick={() => setShowAddActivity({ ...showAddActivity, [stop.id]: true })}
@@ -338,9 +306,11 @@ export default function ItineraryBuilder() {
 
 const styles = {
   container: {
+    width: '100%',
     maxWidth: '1000px',
     margin: '0 auto',
-    padding: '20px'
+    padding: '20px',
+    boxSizing: 'border-box'
   },
   header: {
     display: 'flex',

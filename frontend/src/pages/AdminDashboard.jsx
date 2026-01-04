@@ -134,7 +134,13 @@ export default function AdminDashboard() {
 }
 
 const styles = {
-  container: { maxWidth: '1400px', margin: '0 auto', padding: '20px' },
+  container: { 
+    width: '100%',
+    maxWidth: '1400px', 
+    margin: '0 auto', 
+    padding: '20px',
+    boxSizing: 'border-box'
+  },
   statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' },
   statCard: { backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
   statNumber: { margin: '12px 0 0 0', fontSize: '32px', fontWeight: 'bold', color: '#007bff' },

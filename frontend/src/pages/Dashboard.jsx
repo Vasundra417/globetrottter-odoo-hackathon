@@ -1,5 +1,3 @@
-// frontend/src/pages/Dashboard.jsx
-
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
@@ -67,9 +65,11 @@ export default function Dashboard() {
 
 const styles = {
   container: {
+    width: '100%',
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px'
+    padding: '20px',
+    boxSizing: 'border-box'
   },
   header: {
     display: 'flex',

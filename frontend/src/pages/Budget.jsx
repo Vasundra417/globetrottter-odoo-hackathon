@@ -241,7 +241,13 @@ export default function Budget() {
 }
 
 const styles = {
-  container: { maxWidth: '1200px', margin: '0 auto', padding: '20px' },
+  container: { 
+    width: '100%',
+    maxWidth: '1200px', 
+    margin: '0 auto', 
+    padding: '20px',
+    boxSizing: 'border-box'
+  },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #007bff', paddingBottom: '20px' },
   backBtn: { padding: '10px 16px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
   summaryCards: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
