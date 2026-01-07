@@ -67,5 +67,4 @@ class TripDetailResponse(TripResponse):
     """
     Full trip with all related data
     """
-    pass
-    #stops: List['StopResponse'] = []  # Will import StopResponse later
+    pass  # Remove the stops field for now

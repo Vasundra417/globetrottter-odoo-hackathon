@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { TripProvider } from './context/TripContext';
+// Add these imports
+
 
 // Page imports
 import Landing from './pages/Landing';
@@ -12,6 +14,9 @@ import ItineraryView from './pages/ItineraryView';
 import Budget from './pages/Budget';
 import AdminDashboard from './pages/AdminDashboard';
 import Navbar from './components/Navbar';
+import Timelineitinerary from './pages/temp';
+
+import AdminLogin from './pages/AdminLogin';
 
 function App() {
   return (
@@ -72,7 +77,8 @@ function App() {
                   </div>
                 </div>
               } />
-              
+<Route path="/admin/login" element={<AdminLogin />} />
+<Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin" element={
                 <div style={styles.pageWrapper}>
                   <Navbar />

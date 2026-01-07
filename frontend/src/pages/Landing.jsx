@@ -243,6 +243,8 @@ export default function Landing() {
         </div>
       </section>
 
+
+
       {/* Benefits Section */}
       <section style={styles.benefits}>
         <div style={styles.benefitsContent}>
@@ -315,6 +317,22 @@ export default function Landing() {
             <p style={styles.footerText}>Empowering personalized travel planning</p>
           </div>
 
+          <div style={styles.authButtons}>
+  <button
+    onClick={() => navigate('/login')}
+    style={styles.userLoginBtn}
+  >
+    👤 User Login
+  </button>
+  
+  <button
+    onClick={() => navigate('/admin/login')}
+    style={styles.adminLoginBtn}
+  >
+    🔐 Admin Login
+  </button>
+</div>
+
           <div style={styles.footerSection}>
             <h4 style={styles.footerTitle}>Features</h4>
             <ul style={styles.footerList}>
@@ -350,7 +368,33 @@ const styles = {
     backgroundColor: '#f8f9fa',
     color: '#333'
   },
-  
+  authButtons: {
+    display: 'flex',
+    gap: '16px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',},
+
+  userLoginBtn: {
+    padding: '14px 32px',
+    backgroundColor: '#2563eb',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  adminLoginBtn: {
+    padding: '14px 32px',
+    backgroundColor: '#1e3a8a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+
   // NAVBAR
   navbar: {
     backgroundColor: '#fff',

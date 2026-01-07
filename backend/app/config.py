@@ -5,20 +5,22 @@ from typing import List
 
 class Settings(BaseSettings):
     # DATABASE CONNECTION
-    DATABASE_URL: str  # This will be read from .env file
+    DATABASE_URL: str = "sqlite:///./globetrotter.db"  # Default for development
     
     # SECURITY
-    SECRET_KEY: str    # For JWT tokens
-    ALGORITHM: str = "HS256"  # JWT algorithm
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # Token expiry
+    SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # CORS (Cross-Origin Resource Sharing)
-    # This allows frontend to talk to backend
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    # CORS - IMPORTANT!
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000"
+    ]
 
     class Config:
-        # Tell Pydantic to read from .env file
         env_file = ".env"
 
-# Create a global settings object
 settings = Settings()

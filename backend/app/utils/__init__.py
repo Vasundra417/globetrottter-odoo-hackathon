@@ -5,7 +5,7 @@ from .security import (
     verify_password,
     create_access_token,
     decode_access_token,
-    #get_user_id_from_token
+    get_user_id_from_token
 )
 
 __all__ = [

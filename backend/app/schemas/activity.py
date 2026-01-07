@@ -8,6 +8,7 @@ class ActivityCreate(BaseModel):
     """
     Create activity:
     {
+        "stop_id": 1,  # This is required!
         "name": "Visit Eiffel Tower",
         "category": "sightseeing",
         "description": "Iconic landmark",
@@ -17,6 +18,7 @@ class ActivityCreate(BaseModel):
         "time_start": "10:00"
     }
     """
+    stop_id: int  # MUST BE HERE
     name: str
     category: Optional[str] = None
     description: Optional[str] = None

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
 import { stopService, activityService } from '../services/api';
+import TripProgress from '../components/TripProgress';
 
 export default function ItineraryBuilder() {
   const { tripId } = useParams();
@@ -11,6 +12,17 @@ export default function ItineraryBuilder() {
   const [showAddActivity, setShowAddActivity] = useState({});
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  const [progressData, setProgressData] = useState({
+  stops: [],
+  activities: [],
+  budget: null
+});
+  const [tripDates, setTripDates] = useState({
+  start: null,
+  end: null
+});
+
 
   const [newStop, setNewStop] = useState({
     city_name: '',
@@ -24,86 +36,218 @@ export default function ItineraryBuilder() {
 
   const [newActivities, setNewActivities] = useState({});
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await getTrip(tripId);
-      const stopsResponse = await stopService.listStops(tripId);
-      setStops(stopsResponse.data || []);
-      setLoading(false);
-    };
-
-    loadData();
-  }, [tripId]);
-
-  const handleAddStop = async (e) => {
-    e.preventDefault();
-
-    if (!newStop.city_name || !newStop.arrival_date || !newStop.departure_date) {
-      alert('Please fill in required fields');
-      return;
-    }
-
-    const stopData = {
-      ...newStop,
-      sequence_order: stops.length + 1,
-      cost_index: newStop.cost_index ? parseFloat(newStop.cost_index) : null
-    };
-
-    const result = await addStop(tripId, stopData);
-
-    if (result) {
-      setStops([...stops, result]);
-      setNewStop({
-        city_name: '',
-        country: '',
-        arrival_date: '',
-        departure_date: '',
-        sequence_order: stops.length + 2,
-        cost_index: '',
-        description: ''
+ 
+useEffect(() => {
+  const loadData = async () => {
+    setLoading(true);
+    const trip = await getTrip(tripId);
+    
+    if (trip) {
+      setTripDates({
+        start: new Date(trip.start_date),
+        end: new Date(trip.end_date)
       });
-      setShowAddStop(false);
     }
-  };
-
-  const handleAddActivity = async (stopId, e) => {
-    e.preventDefault();
-
-    const activityData = newActivities[stopId];
-
-    if (!activityData || !activityData.name || !activityData.date_scheduled) {
-      alert('Please fill in required fields');
-      return;
-    }
-
-    const result = await addActivity(stopId, {
-      ...activityData,
-      cost: activityData.cost ? parseFloat(activityData.cost) : null,
-      duration_hours: activityData.duration_hours ? parseFloat(activityData.duration_hours) : null
-    });
-
-    if (result) {
-      setStops(stops.map(stop => {
-        if (stop.id === stopId) {
+    
+    const stopsResponse = await stopService.listStops(tripId);
+    const stopsData = stopsResponse.data || [];
+    
+    const stopsWithActivities = await Promise.all(
+      stopsData.map(async (stop) => {
+        try {
+          const activitiesResponse = await activityService.listActivities(stop.id);
           return {
             ...stop,
-            activities: [...(stop.activities || []), result]
+            activities: activitiesResponse.data || []
+          };
+        } catch (error) {
+          return {
+            ...stop,
+            activities: []
           };
         }
-        return stop;
-      }));
-
-      setNewActivities({
-        ...newActivities,
-        [stopId]: {}
+      })
+    );
+    
+    // Load budget
+    try {
+      const budgetRes = await fetch(`http://localhost:8000/api/budget/summary/${tripId}`);
+      const budgetData = await budgetRes.json();
+      
+      // Calculate total activities
+      const allActivities = stopsWithActivities.flatMap(s => s.activities || []);
+      
+      setProgressData({
+        stops: stopsWithActivities,
+        activities: allActivities,
+        budget: budgetData
       });
-      setShowAddActivity({
-        ...showAddActivity,
-        [stopId]: false
-      });
+    } catch (error) {
+      console.error('Error loading budget:', error);
     }
+    
+    setStops(stopsWithActivities);
+    setLoading(false);
   };
+
+  loadData();
+}, [tripId]);
+
+
+  const validateDate = (date, fieldName) => {
+  const selectedDate = new Date(date);
+  const tripStart = tripDates.start;
+  const tripEnd = tripDates.end;
+  
+  if (selectedDate < tripStart || selectedDate > tripEnd) {
+    alert(
+      `❌ Invalid Date!\n\n` +
+      `${fieldName} must be between:\n` +
+      `${tripStart.toLocaleDateString()} and ${tripEnd.toLocaleDateString()}\n\n` +
+      `Trip Duration:\n` +
+      `Start: ${tripStart.toLocaleDateString()}\n` +
+      `End: ${tripEnd.toLocaleDateString()}`
+    );
+    return false;
+  }
+  return true;
+};
+
+
+const handleAddStop = async (e) => {
+  e.preventDefault();
+
+  if (!newStop.city_name || !newStop.arrival_date || !newStop.departure_date) {
+    alert('Please fill in required fields');
+    return;
+  }
+
+  // VALIDATE DATES
+  if (!validateDate(newStop.arrival_date, 'Arrival date')) {
+    return;
+  }
+  
+  if (!validateDate(newStop.departure_date, 'Departure date')) {
+    return;
+  }
+  
+  if (new Date(newStop.arrival_date) > new Date(newStop.departure_date)) {
+    alert('❌ Arrival date cannot be after departure date!');
+    return;
+  }
+
+  const stopData = {
+    ...newStop,
+    sequence_order: stops.length + 1,
+    cost_index: newStop.cost_index ? parseFloat(newStop.cost_index) : null
+  };
+
+  const result = await addStop(tripId, stopData);
+
+  if (result) {
+    setStops([...stops, result]);
+    setNewStop({
+      city_name: '',
+      country: '',
+      arrival_date: '',
+      departure_date: '',
+      sequence_order: stops.length + 2,
+      cost_index: '',
+      description: ''
+    });
+    setShowAddStop(false);
+    alert('✅ Stop added successfully!');
+  }
+};
+
+  // Add this function before handleAddActivity
+const validateBudget = async (activityCost) => {
+  try {
+    // Get current trip budget
+    const tripRes = await fetch(`http://localhost:8000/api/trips/${tripId}`);
+    const trip = await tripRes.json();
+    
+    // Get current spending
+    const budgetRes = await fetch(`http://localhost:8000/api/budget/summary/${tripId}`);
+    const budgetSummary = await budgetRes.json();
+    
+    const totalBudget = parseFloat(trip.budget_limit || 0);
+    const currentSpending = parseFloat(budgetSummary.total_cost || 0);
+    const newTotal = currentSpending + parseFloat(activityCost || 0);
+    
+    if (newTotal > totalBudget) {
+      const remaining = totalBudget - currentSpending;
+      alert(
+        `⚠️ BUDGET EXCEEDED!\n\n` +
+        `Total Budget: $${totalBudget}\n` +
+        `Current Spending: $${currentSpending}\n` +
+        `Activity Cost: $${activityCost}\n` +
+        `New Total: $${newTotal}\n\n` +
+        `You only have $${remaining.toFixed(2)} remaining!\n` +
+        `Please reduce the activity cost or increase your trip budget.`
+      );
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error validating budget:', error);
+    return true; // Allow if validation fails
+  }
+};
+
+// Update handleAddActivity
+const handleAddActivity = async (stopId, e) => {
+  e.preventDefault();
+
+  const activityData = newActivities[stopId];
+
+  if (!activityData || !activityData.name || !activityData.date_scheduled) {
+    alert('Please fill in required fields');
+    return;
+  }
+
+  const activityCost = parseFloat(activityData.cost) || 0;
+  
+  // VALIDATE BUDGET BEFORE ADDING
+  if (activityCost > 0) {
+    const isValid = await validateBudget(activityCost);
+    if (!isValid) {
+      return; // Stop if budget exceeded
+    }
+  }
+
+  const result = await addActivity(stopId, {
+    ...activityData,
+    cost: activityCost,
+    duration_hours: activityData.duration_hours ? parseFloat(activityData.duration_hours) : null
+  });
+
+  if (result) {
+    setStops(stops.map(stop => {
+      if (stop.id === stopId) {
+        return {
+          ...stop,
+          activities: [...(stop.activities || []), result]
+        };
+      }
+      return stop;
+    }));
+
+    setNewActivities({
+      ...newActivities,
+      [stopId]: {}
+    });
+    setShowAddActivity({
+      ...showAddActivity,
+      [stopId]: false
+    });
+    
+    alert('✅ Activity added successfully!');
+  }
+};
+  
+
 
   const handleActivityChange = (stopId, field, value) => {
     setNewActivities({
@@ -168,20 +312,35 @@ export default function ItineraryBuilder() {
               style={styles.input}
             />
             <div style={styles.row}>
-              <input
-                type="date"
-                value={newStop.arrival_date}
-                onChange={(e) => setNewStop({ ...newStop, arrival_date: e.target.value })}
-                style={styles.input}
-                required
-              />
-              <input
-                type="date"
-                value={newStop.departure_date}
-                onChange={(e) => setNewStop({ ...newStop, departure_date: e.target.value })}
-                style={styles.input}
-                required
-              />
+             <input
+  type="date"
+  value={newStop.arrival_date}
+  onChange={(e) => setNewStop({ ...newStop, arrival_date: e.target.value })}
+  min={tripDates.start ? tripDates.start.toISOString().split('T')[0] : ''}
+  max={tripDates.end ? tripDates.end.toISOString().split('T')[0] : ''}
+  style={styles.input}
+  required
+/>
+
+<input
+  type="date"
+  value={newStop.departure_date}
+  onChange={(e) => setNewStop({ ...newStop, departure_date: e.target.value })}
+  min={tripDates.start ? tripDates.start.toISOString().split('T')[0] : ''}
+  max={tripDates.end ? tripDates.end.toISOString().split('T')[0] : ''}
+  style={styles.input}
+  required
+/>
+// For Activity dates:
+<input
+  type="date"
+  value={newActivities[stop.id]?.date_scheduled || ''}
+  onChange={(e) => handleActivityChange(stop.id, 'date_scheduled', e.target.value)}
+  min={tripDates.start ? tripDates.start.toISOString().split('T')[0] : ''}
+  max={tripDates.end ? tripDates.end.toISOString().split('T')[0] : ''}
+  style={styles.input}
+  required
+/>
             </div>
             <textarea
               placeholder="Description"

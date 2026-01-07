@@ -1,39 +1,52 @@
+// frontend/src/pages/AdminDashboard.jsx
+
 import { useState, useEffect } from 'react';
-import { adminService } from '../services/api';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
-  const [destinations, setDestinations] = useState([]);
-  const [topUsers, setTopUsers] = useState([]);
-  const [activities, setActivities] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
+    // CHECK IF ADMIN IS LOGGED IN
+    const isAdmin = localStorage.getItem('isAdmin');
+    if (!isAdmin) {
+      navigate('/admin/login');
+      return;
+    }
+
+    loadAdminData();
+  }, []);
+
+  const loadAdminData = async () => {
+    try {
       setLoading(true);
 
-      try {
-        const [statsRes, destRes, usersRes, actRes] = await Promise.all([
-          adminService.getStats(),
-          adminService.getPopularDestinations(),
-          adminService.getTopUsers(),
-          adminService.getActivityAnalytics()
-        ]);
+      // Load admin stats
+      const statsRes = await fetch('http://localhost:8000/api/admin/stats');
+      const statsData = await statsRes.json();
+      setStats(statsData);
 
-        setStats(statsRes.data);
-        setDestinations(destRes.data || []);
-        setTopUsers(usersRes.data || []);
-        setActivities(actRes.data || []);
-      } catch (err) {
-        console.error('Failed to load admin data');
-      }
+      // Load all trips (for admin view)
+      const tripsRes = await fetch('http://localhost:8000/api/trips');
+      const tripsData = await tripsRes.json();
+      setTrips(tripsData);
 
       setLoading(false);
-    };
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+      setLoading(false);
+    }
+  };
 
-    loadData();
-  }, []);
+  const handleLogout = () => {
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminUser');
+    navigate('/admin/login');
+  };
 
   if (loading) {
     return <div style={styles.container}><p>Loading...</p></div>;
@@ -41,92 +54,98 @@ export default function AdminDashboard() {
 
   return (
     <div style={styles.container}>
-      <h1>📊 Admin Dashboard</h1>
+      {/* Admin Header */}
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.title}>🔐 Admin Dashboard</h1>
+          <p style={styles.subtitle}>Welcome, {localStorage.getItem('adminUser')}</p>
+        </div>
+        <button onClick={handleLogout} style={styles.logoutBtn}>
+          Logout
+        </button>
+      </div>
 
+      {/* Stats Grid */}
       {stats && (
         <div style={styles.statsGrid}>
           <div style={styles.statCard}>
-            <h3>Total Users</h3>
-            <p style={styles.statNumber}>{stats.total_users}</p>
+            <div style={styles.statIcon}>👥</div>
+            <div>
+              <p style={styles.statLabel}>Total Users</p>
+              <p style={styles.statValue}>{stats.total_users}</p>
+            </div>
           </div>
+
           <div style={styles.statCard}>
-            <h3>Total Trips</h3>
-            <p style={styles.statNumber}>{stats.total_trips}</p>
+            <div style={styles.statIcon}>✈️</div>
+            <div>
+              <p style={styles.statLabel}>Total Trips</p>
+              <p style={styles.statValue}>{stats.total_trips}</p>
+            </div>
           </div>
+
           <div style={styles.statCard}>
-            <h3>Total Stops</h3>
-            <p style={styles.statNumber}>{stats.total_stops}</p>
+            <div style={styles.statIcon}>📍</div>
+            <div>
+              <p style={styles.statLabel}>Total Stops</p>
+              <p style={styles.statValue}>{stats.total_stops}</p>
+            </div>
           </div>
+
           <div style={styles.statCard}>
-            <h3>Total Activities</h3>
-            <p style={styles.statNumber}>{stats.total_activities}</p>
+            <div style={styles.statIcon}>🎯</div>
+            <div>
+              <p style={styles.statLabel}>Total Activities</p>
+              <p style={styles.statValue}>{stats.total_activities}</p>
+            </div>
           </div>
+
           <div style={styles.statCard}>
-            <h3>Avg Trip Duration</h3>
-            <p style={styles.statNumber}>{stats.avg_trip_duration} days</p>
+            <div style={styles.statIcon}>📅</div>
+            <div>
+              <p style={styles.statLabel}>Avg Trip Duration</p>
+              <p style={styles.statValue}>{stats.avg_trip_duration} days</p>
+            </div>
           </div>
+
           <div style={styles.statCard}>
-            <h3>Avg Budget</h3>
-            <p style={styles.statNumber}>${stats.avg_budget.toFixed(0)}</p>
+            <div style={styles.statIcon}>💰</div>
+            <div>
+              <p style={styles.statLabel}>Avg Budget</p>
+              <p style={styles.statValue}>${stats.avg_budget}</p>
+            </div>
           </div>
         </div>
       )}
 
-      <div style={styles.chartsGrid}>
-        {destinations.length > 0 && (
-          <div style={styles.chartBox}>
-            <h3>🏙️ Most Visited Cities</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={destinations.slice(0, 10)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="city" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {activities.length > 0 && (
-          <div style={styles.chartBox}>
-            <h3>🎯 Popular Activity Types</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={activities}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#82ca9d" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
-
-      <div style={styles.tablesGrid}>
-        <div style={styles.tableBox}>
-          <h3>👥 Top Users by Trip Count</h3>
-          {topUsers.length === 0 ? (
-            <p>No data</p>
-          ) : (
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.tableHeader}>
-                  <th>Email</th>
-                  <th>Trip Count</th>
+      {/* Recent Trips Table */}
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>Recent Trips</h2>
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr style={styles.tableHeader}>
+                <th style={styles.th}>ID</th>
+                <th style={styles.th}>Trip Name</th>
+                <th style={styles.th}>User ID</th>
+                <th style={styles.th}>Start Date</th>
+                <th style={styles.th}>Budget</th>
+                <th style={styles.th}>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trips.slice(0, 10).map((trip) => (
+                <tr key={trip.id} style={styles.tableRow}>
+                  <td style={styles.td}>{trip.id}</td>
+                  <td style={styles.td}>{trip.name}</td>
+                  <td style={styles.td}>{trip.user_id}</td>
+                  <td style={styles.td}>{new Date(trip.start_date).toLocaleDateString()}</td>
+                  <td style={styles.td}>${trip.budget_limit || 0}</td>
+                  <td style={styles.td}>{new Date(trip.created_at).toLocaleDateString()}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {topUsers.slice(0, 10).map((user, index) => (
-                  <tr key={index} style={styles.tableRow}>
-                    <td>{user.user_email}</td>
-                    <td style={styles.centered}>{user.trip_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -134,22 +153,115 @@ export default function AdminDashboard() {
 }
 
 const styles = {
-  container: { 
-    width: '100%',
-    maxWidth: '1400px', 
-    margin: '0 auto', 
-    padding: '20px',
-    boxSizing: 'border-box'
+  container: {
+    minHeight: '100vh',
+    backgroundColor: '#f0f2f5',
+    padding: '30px 20px',
+    maxWidth: '1400px',
+    margin: '0 auto',
   },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' },
-  statCard: { backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
-  statNumber: { margin: '12px 0 0 0', fontSize: '32px', fontWeight: 'bold', color: '#007bff' },
-  chartsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '20px', marginBottom: '40px' },
-  chartBox: { backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px', padding: '20px' },
-  tablesGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' },
-  tableBox: { backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px', padding: '20px' },
-  table: { width: '100%', borderCollapse: 'collapse', marginTop: '12px' },
-  tableHeader: { backgroundColor: '#f0f0f0', borderBottom: '2px solid #ddd' },
-  tableRow: { borderBottom: '1px solid #ddd' },
-  centered: { textAlign: 'center' }
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '40px',
+    flexWrap: 'wrap',
+    gap: '20px',
+  },
+  title: {
+    fontSize: '36px',
+    fontWeight: 'bold',
+    color: '#1e3a8a',
+    margin: '0 0 4px 0',
+  },
+  subtitle: {
+    fontSize: '16px',
+    color: '#666',
+    margin: 0,
+  },
+  logoutBtn: {
+    padding: '12px 24px',
+    backgroundColor: '#ef4444',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '15px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '20px',
+    marginBottom: '40px',
+  },
+  statCard: {
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    padding: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  },
+  statIcon: {
+    fontSize: '32px',
+    width: '56px',
+    height: '56px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+    borderRadius: '12px',
+  },
+  statLabel: {
+    fontSize: '13px',
+    color: '#666',
+    margin: '0 0 4px 0',
+    fontWeight: '500',
+  },
+  statValue: {
+    fontSize: '28px',
+    fontWeight: 'bold',
+    color: '#1e3a8a',
+    margin: 0,
+  },
+  section: {
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    padding: '24px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  },
+  sectionTitle: {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    color: '#1e3a8a',
+    marginBottom: '20px',
+  },
+  tableContainer: {
+    overflowX: 'auto',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+  },
+  tableHeader: {
+    backgroundColor: '#f3f4f6',
+  },
+  th: {
+    padding: '12px',
+    textAlign: 'left',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#374151',
+    borderBottom: '2px solid #e5e7eb',
+  },
+  tableRow: {
+    borderBottom: '1px solid #e5e7eb',
+  },
+  td: {
+    padding: '12px',
+    fontSize: '14px',
+    color: '#4b5563',
+  },
 };
