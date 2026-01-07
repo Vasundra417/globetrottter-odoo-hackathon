@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
 import { stopService, activityService } from '../services/api';
 import TripProgress from '../components/TripProgress';
+import ActivitySuggestions from '../components/ActivitySuggestions';
 
 export default function ItineraryBuilder() {
   const { tripId } = useParams();
@@ -159,7 +160,44 @@ const handleAddStop = async (e) => {
     alert('✅ Stop added successfully!');
   }
 };
+const handleQuickAddActivity = async (stopId, suggestion) => {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const activityData = {
+    name: suggestion.name,
+    category: suggestion.category,
+    cost: suggestion.estimatedCost,
+    duration_hours: suggestion.duration,
+    date_scheduled: today, // You might want to make this smarter
+  };
 
+  const result = await addActivity(stopId, activityData);
+
+  if (result) {
+    setStops(stops.map(stop => {
+      if (stop.id === stopId) {
+        return {
+          ...stop,
+          activities: [...(stop.activities || []), result]
+        };
+      }
+      return stop;
+    }));
+    
+    alert('✅ Activity added from suggestions!');
+  }
+};
+<div style={styles.activities}>
+  <h4>🎯 Activities</h4>
+  
+  {/* ADD THIS */}
+  <ActivitySuggestions 
+    cityName={stop.city_name}
+    onAddActivity={(suggestion) => handleQuickAddActivity(stop.id, suggestion)}
+  />
+  
+  {/* Rest of activities list... */}
+</div>
   // Add this function before handleAddActivity
 const validateBudget = async (activityCost) => {
   try {
@@ -274,6 +312,12 @@ const handleAddActivity = async (stopId, e) => {
           >
             👁️ View Itinerary
           </button>
+           <button
+  onClick={() => navigate(`/trip/${tripId}/packing`)}
+  style={styles.packingBtn}
+>
+  🧳 Packing List
+</button>
           <button
             onClick={() => navigate(`/trip/${tripId}/budget`)}
             style={styles.budgetBtn}

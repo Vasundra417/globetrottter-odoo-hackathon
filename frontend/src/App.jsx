@@ -15,7 +15,7 @@ import Budget from './pages/Budget';
 import AdminDashboard from './pages/AdminDashboard';
 import Navbar from './components/Navbar';
 import Timelineitinerary from './pages/temp';
-
+import PackingList from './pages/PackingList';
 import AdminLogin from './pages/AdminLogin';
 
 function App() {
@@ -79,6 +79,8 @@ function App() {
               } />
 <Route path="/admin/login" element={<AdminLogin />} />
 <Route path="/admin/dashboard" element={<AdminDashboard />} />
+<Route path="/trip/:tripId/timeline" element={<Timelineitinerary />} />
+<Route path="/trip/:tripId/packing" element={<PackingList />} />
               <Route path="/admin" element={
                 <div style={styles.pageWrapper}>
                   <Navbar />
