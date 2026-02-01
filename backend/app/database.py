@@ -4,14 +4,26 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
 # Create database connection
 # Engine is like a "connection pool" that manages database connections
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
 )
+DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Fix for Heroku/Render PostgreSQL URL
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 # Session maker - creates new database sessions
 SessionLocal = sessionmaker(
     autocommit=False,  # Don't auto-commit changes
