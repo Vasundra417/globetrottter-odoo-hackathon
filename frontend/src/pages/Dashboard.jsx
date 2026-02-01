@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-
+//import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 export default function Dashboard() {
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
@@ -11,22 +11,47 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    navigate('/login');
+  }
+}, []);
+
+
+  useEffect(() => {
     loadTripsWithStops();
   }, []);
+
+  const { user, logout } = useAuth();
 
   const loadTripsWithStops = async () => {
     try {
       setLoading(true);
       
       // Load all trips
-      const tripsRes = await fetch('http://localhost:8000/api/trips');
+      const token = localStorage.getItem('token');
+
+const tripsRes = await fetch('http://localhost:8000/api/trips', {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+
       const tripsData = await tripsRes.json();
       
       // Load stops count for each trip
       const tripsWithStopCounts = await Promise.all(
         tripsData.map(async (trip) => {
           try {
-            const stopsRes = await fetch(`http://localhost:8000/api/stops?trip_id=${trip.id}`);
+            const stopsRes = await fetch(
+  `http://localhost:8000/api/stops?trip_id=${trip.id}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
             const stopsData = await stopsRes.json();
             
             return {
@@ -52,7 +77,6 @@ export default function Dashboard() {
 
   return (
     <div style={styles.container}>
-      <Navbar />
       
       <div style={styles.content}>
         <div style={styles.header}>

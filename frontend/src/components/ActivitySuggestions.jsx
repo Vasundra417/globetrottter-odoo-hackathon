@@ -3,9 +3,23 @@
 import { useState } from 'react';
 import { getSuggestedActivities } from '../utils/travelDetection';
 
-export default function ActivitySuggestions({ cityName, onAddActivity }) {
+export default function ActivitySuggestions({ cityName, onAddActivity, stopDate }) {
   const [expanded, setExpanded] = useState(false);
   const suggestions = getSuggestedActivities(cityName);
+
+  const handleAddSuggestion = (suggestion) => {
+    // Format the suggestion properly with required fields
+    const activityData = {
+      name: suggestion.name,
+      category: suggestion.category,
+      cost: suggestion.estimatedCost,
+      duration_hours: suggestion.duration,
+      date_scheduled: stopDate || new Date().toISOString().split('T')[0], // Use stop date or today
+      description: `Suggested activity in ${cityName}`
+    };
+    
+    onAddActivity(activityData);
+  };
 
   return (
     <div style={styles.container}>
@@ -33,7 +47,7 @@ export default function ActivitySuggestions({ cityName, onAddActivity }) {
                 </div>
               </div>
               <button
-                onClick={() => onAddActivity(suggestion)}
+                onClick={() => handleAddSuggestion(suggestion)}
                 style={styles.addBtn}
               >
                 + Add
@@ -136,6 +150,5 @@ const styles = {
     fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
-    flexShrink: 0,
   },
 };

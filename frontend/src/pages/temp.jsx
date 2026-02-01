@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { detectTravelDays } from '../utils/travelDetection';
+import ActivityCompletionTracker from '../components/ActivityCompletionTracker';
 
 export default function TimelineItinerary() {
   const { tripId } = useParams();
   const navigate = useNavigate();
   const [trip, setTrip] = useState(null);
+  const [stops, setStops] = useState([]);
   const [timeline, setTimeline] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,40 +19,128 @@ export default function TimelineItinerary() {
   }, [tripId]);
 
   const loadTimelineData = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const tripRes = await fetch(`http://localhost:8000/api/trips/${tripId}`);
-    const tripData = await tripRes.json();
-    setTrip(tripData);
+      // Load trip
+      const tripRes = await fetch(`http://localhost:8000/api/trips/${tripId}`);
+      const tripData = await tripRes.json();
+      setTrip(tripData);
 
-    const stopsRes = await fetch(`http://localhost:8000/api/stops?trip_id=${tripId}`);
-    const stopsData = await stopsRes.json();
+      // Load stops
+      const stopsRes = await fetch(`http://localhost:8000/api/stops?trip_id=${tripId}`);
+      const stopsData = await stopsRes.json();
+      setStops(stopsData);
 
-    const allActivities = [];
-    for (const stop of stopsData) {
-      const actRes = await fetch(`http://localhost:8000/api/activities?stop_id=${stop.id}`);
-      const actData = await actRes.json();
-      
-      actData.forEach(activity => {
-        allActivities.push({
-          ...activity,
-          city: stop.city_name,
-          country: stop.country
+      // Load completion status from localStorage
+      const completionStatus = JSON.parse(
+        localStorage.getItem(`activity_completion_${tripId}`) || '{}'
+      );
+
+      // Load all activities
+      const allActivities = [];
+      for (const stop of stopsData) {
+        const actRes = await fetch(`http://localhost:8000/api/activities?stop_id=${stop.id}`);
+        const actData = await actRes.json();
+        
+        actData.forEach(activity => {
+          allActivities.push({
+            ...activity,
+            city: stop.city_name,
+            country: stop.country,
+            completed: completionStatus[activity.id] || false
+          });
         });
+      }
+
+      setActivities(allActivities);
+
+      // Group by date with travel days
+      const grouped = groupByDate(allActivities, tripData, stopsData);
+      setTimeline(grouped);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading timeline:', error);
+      setLoading(false);
+    }
+  };
+
+  const groupByDate = (activities, trip, stops) => {
+    const days = [];
+    const start = new Date(trip.start_date);
+    const end = new Date(trip.end_date);
+    
+    let currentDate = new Date(start);
+    let dayNumber = 1;
+
+    // Get travel days
+    const travelDays = detectTravelDays(stops);
+
+    while (currentDate <= end) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      const dayActivities = activities.filter(act => {
+        const actDate = new Date(act.date_scheduled).toISOString().split('T')[0];
+        return actDate === dateStr;
       });
+
+      // Check if this is a travel day
+      const travelDay = travelDays.find(td => {
+        const travelDate = td.date.toISOString().split('T')[0];
+        return travelDate === dateStr;
+      });
+
+      days.push({
+        dayNumber,
+        date: new Date(currentDate),
+        dateStr,
+        activities: dayActivities,
+        totalCost: dayActivities.reduce((sum, act) => sum + (parseFloat(act.cost) || 0), 0),
+        travelDay: travelDay || null,
+        isTravel: !!travelDay
+      });
+
+      currentDate.setDate(currentDate.getDate() + 1);
+      dayNumber++;
     }
 
-    const grouped = groupByDate(allActivities, tripData, stopsData);
-    setTimeline(grouped);
-    setLoading(false);
-  } catch (error) {
-    console.error('Error loading timeline:', error);
-    setLoading(false);
-  }
-};
+    return days;
+  };
 
-
+  const handleToggleCompletion = async (activityId) => {
+    try {
+      // Update local state
+      const updatedActivities = activities.map(activity => {
+        if (activity.id === activityId) {
+          return {
+            ...activity,
+            completed: !activity.completed
+          };
+        }
+        return activity;
+      });
+      
+      setActivities(updatedActivities);
+      
+      // Update timeline to reflect changes
+      const grouped = groupByDate(updatedActivities, trip, stops);
+      setTimeline(grouped);
+      
+      // Store in localStorage for persistence
+      const completionStatus = updatedActivities.reduce((acc, act) => {
+        acc[act.id] = act.completed || false;
+        return acc;
+      }, {});
+      
+      localStorage.setItem(
+        `activity_completion_${tripId}`, 
+        JSON.stringify(completionStatus)
+      );
+      
+    } catch (error) {
+      console.error('Error toggling completion:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,54 +161,13 @@ export default function TimelineItinerary() {
   const totalTripCost = timeline.reduce((sum, day) => sum + day.totalCost, 0);
   const totalActivities = timeline.reduce((sum, day) => sum + day.activities.length, 0);
 
-  const groupByDate = (activities, trip, stops) => {
-  const days = [];
-  const start = new Date(trip.start_date);
-  const end = new Date(trip.end_date);
-  
-  let currentDate = new Date(start);
-  let dayNumber = 1;
-
-  const travelDay = travelDays.find(td => {
-      const travelDate = td.date.toISOString().split('T')[0];
-      return travelDate === dateStr;
-    });
-
-    days.push({
-      dayNumber,
-      date: new Date(currentDate),
-      dateStr,
-      activities: dayActivities,
-      totalCost: dayActivities.reduce((sum, act) => sum + (parseFloat(act.cost) || 0), 0),
-      travelDay: travelDay || null,
-      isTravel: !!travelDay
-    });
-
-    currentDate.setDate(currentDate.getDate() + 1);
-    dayNumber++;
-  
-
-  return days;
-};
-  // Get travel days
-  const travelDays = detectTravelDays(stops);
-
-  while (currentDate <= end) {
-    const dateStr = currentDate.toISOString().split('T')[0];
-    
-    const dayActivities = activities.filter(act => {
-      const actDate = new Date(act.date_scheduled).toISOString().split('T')[0];
-      return actDate === dateStr;
-    });  
-  }
-
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}>
-          ← Back
-        </button>
+        <button onClick={() => navigate(`/trip/${tripId}/view`)} style={styles.backBtn}>
+  ← Back to Itinerary
+</button>
         <div>
           <h1 style={styles.title}>{trip.name}</h1>
           <p style={styles.subtitle}>Day-by-Day Timeline</p>
@@ -144,6 +194,12 @@ export default function TimelineItinerary() {
         </div>
       </div>
 
+      {/* Activity Completion Tracker */}
+      <ActivityCompletionTracker
+        activities={activities}
+        onToggleComplete={handleToggleCompletion}
+      />
+
       {/* Timeline */}
       <div style={styles.timelineContainer}>
         {timeline.map((day, index) => (
@@ -156,19 +212,6 @@ export default function TimelineItinerary() {
 
             {/* Day Content */}
             <div style={styles.dayContent}>
-              {day.isTravel && day.travelDay && (
-  <div style={styles.travelCard}>
-    <div style={styles.travelIcon}>{day.travelDay.icon}</div>
-    <div>
-      <h3 style={styles.travelTitle}>Travel Day</h3>
-      <p style={styles.travelRoute}>
-        {day.travelDay.from}, {day.travelDay.fromCountry} ➜ {day.travelDay.to}, {day.travelDay.toCountry}
-      </p>
-      <p style={styles.travelTime}>⏱️ Estimated time: {day.travelDay.estimatedTime}</p>
-    </div>
-  </div>
-)}
-
               {/* Day Header */}
               <div style={styles.dayHeader}>
                 <div>
@@ -185,6 +228,20 @@ export default function TimelineItinerary() {
                 </div>
               </div>
 
+              {/* Travel Day Alert */}
+              {day.isTravel && day.travelDay && (
+                <div style={styles.travelCard}>
+                  <div style={styles.travelIcon}>{day.travelDay.icon}</div>
+                  <div>
+                    <h3 style={styles.travelTitle}>Travel Day</h3>
+                    <p style={styles.travelRoute}>
+                      {day.travelDay.from}, {day.travelDay.fromCountry} ➜ {day.travelDay.to}, {day.travelDay.toCountry}
+                    </p>
+                    <p style={styles.travelTime}>⏱️ Estimated time: {day.travelDay.estimatedTime}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Activities */}
               {day.activities.length === 0 ? (
                 <div style={styles.noActivities}>
@@ -198,9 +255,24 @@ export default function TimelineItinerary() {
                         {activity.time_start || `Activity ${actIndex + 1}`}
                       </div>
                       <div style={styles.activityContent}>
-                        <h3 style={styles.activityName}>
-                          {activity.name}
-                        </h3>
+                        <div style={styles.activityHeader}>
+                          <label style={styles.checkboxLabel}>
+                            <input
+                              type="checkbox"
+                              checked={activity.completed || false}
+                              onChange={() => handleToggleCompletion(activity.id)}
+                              style={styles.checkbox}
+                            />
+                            <h3 style={{
+                              ...styles.activityName,
+                              textDecoration: activity.completed ? 'line-through' : 'none',
+                              color: activity.completed ? '#9ca3af' : '#1e293b'
+                            }}>
+                              {activity.name}
+                              {activity.completed && <span style={styles.completedBadge}> ✅</span>}
+                            </h3>
+                          </label>
+                        </div>
                         <p style={styles.activityLocation}>
                           📍 {activity.city}, {activity.country}
                         </p>
@@ -217,7 +289,6 @@ export default function TimelineItinerary() {
                         </div>
                         {activity.description && (
                           <p style={styles.activityDescription}>{activity.description}</p>
-                        
                         )}
                       </div>
                     </div>
@@ -231,13 +302,13 @@ export default function TimelineItinerary() {
 
       {/* Edit Button */}
       <div style={styles.footer}>
-        <button
-          onClick={() => navigate(`/trip/${tripId}/itinerary`)}
-          style={styles.editBtn}
-        >
-          ✏️ Edit Itinerary
-        </button>
-      </div>
+  <button
+    onClick={() => navigate(`/trip/${tripId}/view`)}
+    style={styles.editBtn}
+  >
+    ← Back to Itinerary
+  </button>
+</div>
     </div>
   );
 }
@@ -249,42 +320,6 @@ const styles = {
     padding: '30px 20px',
     maxWidth: '1000px',
     margin: '0 auto',
-  },
-  travelCard: {
-    margin: '16px',
-    padding: '20px',
-    backgroundColor: '#fef3c7',
-    border: '2px solid #fbbf24',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  travelIcon: {
-    fontSize: '32px',
-    width: '56px',
-    height: '56px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderRadius: '50%',
-  },
-  travelTitle: {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#92400e',
-    margin: '0 0 4px 0',
-  },
-  travelRoute: {
-    fontSize: '15px',
-    color: '#78350f',
-    margin: '0 0 4px 0',
-  },
-  travelTime: {
-    fontSize: '13px',
-    color: '#92400e',
-    margin: 0,
   },
   loading: {
     textAlign: 'center',
@@ -424,6 +459,42 @@ const styles = {
     fontSize: '20px',
     fontWeight: 'bold',
   },
+  travelCard: {
+    margin: '16px',
+    padding: '20px',
+    backgroundColor: '#fef3c7',
+    border: '2px solid #fbbf24',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+  },
+  travelIcon: {
+    fontSize: '32px',
+    width: '56px',
+    height: '56px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: '50%',
+  },
+  travelTitle: {
+    fontSize: '18px',
+    fontWeight: 'bold',
+    color: '#92400e',
+    margin: '0 0 4px 0',
+  },
+  travelRoute: {
+    fontSize: '15px',
+    color: '#78350f',
+    margin: '0 0 4px 0',
+  },
+  travelTime: {
+    fontSize: '13px',
+    color: '#92400e',
+    margin: 0,
+  },
   noActivities: {
     padding: '40px 24px',
     textAlign: 'center',
@@ -457,11 +528,29 @@ const styles = {
   activityContent: {
     flex: 1,
   },
+  activityHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    cursor: 'pointer',
+  },
+  checkbox: {
+    width: '20px',
+    height: '20px',
+    cursor: 'pointer',
+  },
   activityName: {
     fontSize: '18px',
     fontWeight: 'bold',
-    color: '#1e293b',
     margin: '0 0 6px 0',
+  },
+  completedBadge: {
+    fontSize: '16px',
   },
   activityLocation: {
     fontSize: '13px',
@@ -511,5 +600,4 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
   },
-  
 };

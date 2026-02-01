@@ -6,7 +6,6 @@ from typing import Optional
 from ..database import get_db
 from ..models.trip import Trip
 from ..schemas.trip import TripCreate, TripResponse
-from ..utils.security import decode_access_token
 
 router = APIRouter(
     prefix="/api/trips",
@@ -28,6 +27,7 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> int:
     try:
         # Extract token from "Bearer <token>"
         token = authorization.replace("Bearer ", "")
+        from ..utils.security import decode_access_token
         payload = decode_access_token(token)
         
         if payload and "sub" in payload:
@@ -46,9 +46,7 @@ def create_trip(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
-    """
-    Create a new trip for the current user
-    """
+    """Create a new trip for the current user"""
     # Get current user ID from token
     user_id = get_current_user_id(authorization)
     
@@ -84,9 +82,7 @@ def list_trips(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
-    """
-    Get all trips for the CURRENT USER ONLY
-    """
+    """Get all trips for the CURRENT USER ONLY"""
     # Get current user ID from token
     user_id = get_current_user_id(authorization)
     
@@ -113,9 +109,7 @@ def get_trip(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
-    """
-    Get details of a single trip (only if it belongs to current user)
-    """
+    """Get details of a single trip (only if it belongs to current user)"""
     user_id = get_current_user_id(authorization)
     
     trip = db.query(Trip).filter(
@@ -142,9 +136,7 @@ def update_trip(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
-    """
-    Update an existing trip (only if it belongs to current user)
-    """
+    """Update an existing trip (only if it belongs to current user)"""
     user_id = get_current_user_id(authorization)
     
     trip = db.query(Trip).filter(
@@ -187,9 +179,7 @@ def delete_trip(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
-    """
-    Delete a trip (only if it belongs to current user)
-    """
+    """Delete a trip (only if it belongs to current user)"""
     user_id = get_current_user_id(authorization)
     
     trip = db.query(Trip).filter(

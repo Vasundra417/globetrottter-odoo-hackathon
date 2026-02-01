@@ -113,6 +113,12 @@ const ItineraryView = () => {
             >
               🔥 Budget
             </button>
+            <button
+    onClick={() => navigate(`/trip/${tripId}/timeline`)}
+    style={styles.btnTimeline}
+  >
+    📅 Timeline View
+  </button>
           </div>
         </div>
 
@@ -524,6 +530,17 @@ const styles = {
     border: '2px solid #86efac',
     flexShrink: 0,
   },
+  btnTimeline: {
+  padding: '12px 24px',
+  backgroundColor: '#8b5cf6',
+  color: '#fff',
+  border: 'none',
+  borderRadius: '8px',
+  fontSize: '15px',
+  fontWeight: '600',
+  cursor: 'pointer',
+  transition: 'all 0.2s',
+},
   costLabel: {
     fontSize: '11px',
     color: '#15803d',

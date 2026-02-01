@@ -40,6 +40,7 @@ class Activity(Base):
     name = Column(String(255), nullable=False)
     date_scheduled = Column(Date, nullable=False)
     
+    
     # OPTIONAL FIELDS
     category = Column(String(50), nullable=True)  # 'sightseeing', 'food', 'adventure'
     description = Column(Text, nullable=True)

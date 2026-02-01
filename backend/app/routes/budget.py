@@ -1,7 +1,9 @@
 # backend/app/routes/budget.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
+from datetime import datetime
+from typing import Optional
 from sqlalchemy import func
 from ..database import get_db
 from ..models.budget import BudgetRecord
@@ -21,18 +23,23 @@ router = APIRouter(
 # ADD BUDGET RECORD (POST /api/budget)
 # ============================================
 @router.post("/", response_model=BudgetRecordResponse)
-def add_budget_record(trip_id: int, record: BudgetRecordCreate, db: Session = Depends(get_db)):
+def add_budget_record(
+    trip_id: int = Query(..., description="Trip ID"),
+    record: BudgetRecordCreate = Body(...),
+    db: Session = Depends(get_db)
+):
     """
     Add expense to trip budget
     
-    Frontend sends: POST /api/budget
+    Frontend sends: POST /api/budget?trip_id=1
+    Body:
     {
-        "trip_id": 1,
-        "category": "transport",
+        "category": "activities",
         "amount": 400.0,
-        "notes": "Flight to Paris"
+        "notes": "Museum Visit"
     }
     """
+
     # Check if trip exists
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
@@ -43,7 +50,8 @@ def add_budget_record(trip_id: int, record: BudgetRecordCreate, db: Session = De
         trip_id=trip_id,
         category=record.category,
         amount=record.amount,
-        notes=record.notes
+        notes=record.notes,
+        date=datetime.now()
     )
     
     db.add(db_record)
@@ -67,8 +75,8 @@ def get_budget_summary(trip_id: int, db: Session = Depends(get_db)):
         "total_stay": 500.0,
         "total_activities": 150.0,
         "total_meals": 300.0,
-        "total_parking": 100.0,
-        "total_cost": 1450.0
+        "total_parking": 0.0,
+        "total_cost": 1350.0
     }
     """
     # Query all records for this trip
@@ -97,6 +105,9 @@ def get_budget_summary(trip_id: int, db: Session = Depends(get_db)):
             summary["total_meals"] += amount
         elif record.category == "parking":
             summary["total_parking"] += amount
+        else:
+            # For any other category (shopping, other), add to activities
+            summary["total_activities"] += amount
         
         summary["total_cost"] += amount
     
@@ -106,7 +117,7 @@ def get_budget_summary(trip_id: int, db: Session = Depends(get_db)):
 # LIST BUDGET RECORDS (GET /api/budget?trip_id=1)
 # ============================================
 @router.get("/", response_model=list[BudgetRecordResponse])
-def list_budget_records(trip_id: int, db: Session = Depends(get_db)):
+def list_budget_records(trip_id: int = Query(...), db: Session = Depends(get_db)):
     """
     Get all expense records for a trip
     
@@ -132,4 +143,4 @@ def delete_budget_record(record_id: int, db: Session = Depends(get_db)):
     db.delete(record)
     db.commit()
     
-    return {"message": "Record deleted"}
+    return {"message": "Record deleted", "id": record_id}

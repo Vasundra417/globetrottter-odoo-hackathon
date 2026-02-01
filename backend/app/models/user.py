@@ -1,6 +1,7 @@
 # backend/app/models/user.py
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..database import Base
 
@@ -42,7 +43,7 @@ class User(Base):
     
     # SOFT DELETE
     is_deleted = Column(Boolean, default=False)
-    
+    trips = relationship("Trip", back_populates="user", cascade="all, delete-orphan")
     def __repr__(self):
         """String representation for debugging"""
         return f"<User(id={self.id}, email={self.email})>"

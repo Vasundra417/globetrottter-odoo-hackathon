@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from "../hooks/useAuth";
+import axios from 'axios';
 
 export default function LoginSignup() {
-  // Get mode from URL (login or signup)
   const searchParams = new URLSearchParams(window.location.search);
   const isSignupMode = searchParams.get('mode') === 'signup' || window.location.pathname === '/signup';
 
@@ -15,34 +15,75 @@ export default function LoginSignup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    let success = false;
+    try {
+      if (mode === 'signup') {
+        // Validate fields for signup
+        if (!firstName.trim() || !lastName.trim()) {
+          setError('First name and last name are required');
+          setLoading(false);
+          return;
+        }
 
-    if (mode === 'signup') {
-      // Validate fields for signup
-      if (!firstName.trim() || !lastName.trim()) {
-        setError('First name and last name are required');
-        setLoading(false);
-        return;
+        // Call signup API
+        const signupResponse = await axios.post('http://localhost:8000/api/auth/signup', {
+          email: email.trim(),
+          password: password,
+          first_name: firstName.trim(),
+          last_name: lastName.trim()
+        });
+
+        // After successful signup, automatically log them in
+        if (signupResponse.data) {
+          const loginResponse = await axios.post('http://localhost:8000/api/auth/login', {
+            email: email.trim(),
+            password: password
+          });
+
+          if (loginResponse.data.token) {
+            login(loginResponse.data.user, loginResponse.data.token);
+            navigate('/dashboard');
+          }
+        }
+      } else {
+        // Call login API
+        const loginResponse = await axios.post('http://localhost:8000/api/auth/login', {
+          email: email.trim(),
+          password: password
+        });
+
+        console.log('Login response:', loginResponse.data);
+
+        if (loginResponse.data.token) {
+          // Store user data using context
+          login(loginResponse.data.user, loginResponse.data.token);
+          navigate('/dashboard');
+        } else {
+          setError('Login failed. Invalid credentials.');
+        }
       }
-      success = await signup(email, password, firstName, lastName);
-    } else {
-      success = await login(email, password);
-    }
-
-    setLoading(false);
-
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError(mode === 'signup' ? 'Signup failed. Please try again.' : 'Login failed. Check your credentials.');
+    } catch (err) {
+      console.error('Authentication error:', err);
+      
+      if (err.response) {
+        // Server responded with error
+        setError(err.response.data.detail || 'Authentication failed');
+      } else if (err.request) {
+        // No response from server
+        setError('Cannot connect to server. Please check if backend is running.');
+      } else {
+        // Other errors
+        setError('An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,7 +106,7 @@ export default function LoginSignup() {
         {/* Header */}
         <div style={styles.header}>
           <h1 style={styles.title}>
-            {mode === 'login' ? '🔓 Sign In' : '📝 Sign Up'}
+            {mode === 'login' ? '🔓 Sign In' : '🔐 Sign Up'}
           </h1>
           <p style={styles.subtitle}>
             {mode === 'login' 

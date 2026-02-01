@@ -1,6 +1,6 @@
 # backend/app/models/budget.py
 
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Text, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..database import Base
@@ -41,7 +41,7 @@ class BudgetRecord(Base):
     # OPTIONAL FIELDS
     date = Column(DateTime, default=datetime.utcnow)
     notes = Column(Text, nullable=True)
-    
+    trip = relationship("Trip", back_populates="budget_records")
     # TIMESTAMP
     created_at = Column(DateTime, default=datetime.utcnow)
     

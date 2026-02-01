@@ -66,6 +66,13 @@ class Trip(Base):
         back_populates="trip",
         cascade="all, delete-orphan"  # Delete stops if trip is deleted
     )
-    
+    user = relationship("User", back_populates="trips")
+    stops = relationship("Stop", back_populates="trip", cascade="all, delete-orphan")
+    budget_records = relationship("BudgetRecord", back_populates="trip", cascade="all, delete-orphan")  # ADD THIS LINE!
+    stops = relationship(
+        "Stop",
+        back_populates="trip",
+        cascade="all, delete-orphan"
+    )
     def __repr__(self):
         return f"<Trip(id={self.id}, name={self.name})>"

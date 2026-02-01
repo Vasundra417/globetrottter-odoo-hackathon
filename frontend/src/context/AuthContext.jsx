@@ -1,105 +1,56 @@
 // frontend/src/context/AuthContext.jsx
 
-import { createContext, useState, useEffect } from 'react';
-import API from '../services/api';
+import { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios'; // ADD THIS LINE
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
+  const [token, setToken] = useState(null);
 
-  // ============================================
-  // LOGIN
-  // ============================================
-  const login = async (email, password) => {
-    setIsLoading(true);
-    setError(null);
+  useEffect(() => {
+    // Load user from localStorage on mount
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
     
-    try {
-      const response = await API.post('/api/auth/login', {
-        email,
-        password
-      });
-      
-      const { token, user } = response.data;
-      
-      // Store token
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      return true;
-    } catch (err) {
-      const errorMsg = err.response?.data?.detail || 'Login failed';
-      setError(errorMsg);
-      return false;
-    } finally {
-      setIsLoading(false);
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
     }
+  }, []);
+
+  const signup = async (data) => {
+  const res = await axios.post("http://localhost:8000/api/auth/signup", data);
+  return res.data;
+};
+
+
+  const login = (userData, authToken) => {
+    setUser(userData);
+    setToken(authToken);
+    localStorage.setItem('token', authToken);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  // ============================================
-  // SIGNUP
-  // ============================================
-  const signup = async (email, password, firstName, lastName) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const response = await API.post('/api/auth/signup', {
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName
-      });
-      
-      const { token, user } = response.data;
-      
-      // Store token
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      return true;
-    } catch (err) {
-      const errorMsg = err.response?.data?.detail || 'Signup failed';
-      setError(errorMsg);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ============================================
-  // LOGOUT
-  // ============================================
   const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
     setUser(null);
-    setIsAuthenticated(false);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        token, 
-        isLoading, 
-        error, 
-        isAuthenticated,
-        login, 
-        signup, 
-        logout 
-      }}
-    >
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
 }
