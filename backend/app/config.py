@@ -1,6 +1,6 @@
 # backend/app/config.py
 
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 from typing import List
 from functools import lru_cache
 class Settings(BaseSettings):
