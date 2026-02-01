@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from app.routes import auth, trips, stops, activities, budget
 
 # Import routers with error handling
 try:
@@ -17,7 +19,11 @@ app = FastAPI(
     description="Travel Planning Platform",
     version="1.0.0"
 )
-
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    os.getenv("FRONTEND_URL", "https://your-frontend.vercel.app"),  # Your Vercel URL
+]
 # ============================================
 # CORS MIDDLEWARE - MUST BE FIRST!
 # ============================================
