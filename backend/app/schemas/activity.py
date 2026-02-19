@@ -5,20 +5,7 @@ from typing import Optional
 from datetime import date, time, datetime
 
 class ActivityCreate(BaseModel):
-    """
-    Create activity:
-    {
-        "stop_id": 1,  # This is required!
-        "name": "Visit Eiffel Tower",
-        "category": "sightseeing",
-        "description": "Iconic landmark",
-        "cost": 20.0,
-        "duration_hours": 2.0,
-        "date_scheduled": "2024-06-01",
-        "time_start": "10:00"
-    }
-    """
-    stop_id: int  # MUST BE HERE
+    stop_id: int
     name: str
     category: Optional[str] = None
     description: Optional[str] = None
@@ -29,9 +16,6 @@ class ActivityCreate(BaseModel):
     image_url: Optional[str] = None
 
 class ActivityResponse(BaseModel):
-    """
-    Return activity info
-    """
     id: int
     stop_id: int
     name: str
@@ -45,4 +29,4 @@ class ActivityResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True  # FIXED

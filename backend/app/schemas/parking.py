@@ -5,9 +5,6 @@ from typing import Optional
 from datetime import date, time, datetime
 
 class ParkingSlotResponse(BaseModel):
-    """
-    Return available parking slot
-    """
     id: int
     stop_id: int
     slot_number: str
@@ -18,19 +15,9 @@ class ParkingSlotResponse(BaseModel):
     max_hours: Optional[int]
 
     class Config:
-        from_attributes = True
+        orm_mode = True  # FIXED
 
 class ParkingBookingCreate(BaseModel):
-    """
-    Book a parking slot:
-    {
-        "parking_slot_id": 1,
-        "start_date": "2024-06-01",
-        "end_date": "2024-06-05",
-        "start_time": "10:00",
-        "end_time": "18:00"
-    }
-    """
     parking_slot_id: int
     start_date: date
     end_date: date
@@ -38,9 +25,6 @@ class ParkingBookingCreate(BaseModel):
     end_time: Optional[time] = None
 
 class ParkingBookingResponse(BaseModel):
-    """
-    Return booking confirmation
-    """
     id: int
     trip_id: int
     parking_slot_id: int
@@ -53,4 +37,4 @@ class ParkingBookingResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True  # FIXED

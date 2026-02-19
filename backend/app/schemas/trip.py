@@ -1,7 +1,7 @@
 # backend/app/schemas/trip.py
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from datetime import date, datetime
 
 # ============================================
@@ -61,10 +61,10 @@ class TripResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True  # FIX: was 'from_attributes' which is Pydantic v2 only
 
 class TripDetailResponse(TripResponse):
     """
     Full trip with all related data
     """
-    pass  # Remove the stops field for now
+    pass

@@ -3,46 +3,46 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from .config import settings
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
-# Create database connection
-# Engine is like a "connection pool" that manages database connections
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
-)
+
+# Get DATABASE_URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set!")
+
 # Fix for Heroku/Render PostgreSQL URL
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Create engine - single definition
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=300,
+    pool_pre_ping=True,   # Check connection is alive before using
+    pool_recycle=300,     # Recycle connections every 5 minutes
 )
-# Session maker - creates new database sessions
+
+# Session maker
 SessionLocal = sessionmaker(
-    autocommit=False,  # Don't auto-commit changes
-    autoflush=False,   # Don't auto-flush changes
-    bind=engine        # Use the engine we created above
+    autocommit=False,
+    autoflush=False,
+    bind=engine
 )
 
 # Base class for all models
-# All database models will inherit from this
 Base = declarative_base()
 
-# Dependency injection function for FastAPI routes
+# Dependency for FastAPI routes
 def get_db():
     """
-    Creates a new database session for each request
-    Automatically closes when request is done
+    Creates a new database session for each request.
+    Automatically closes when request is done.
     """
     db = SessionLocal()
     try:
-        yield db  # Give the session to the route
+        yield db
     finally:
-        db.close()  # Always close the session
+        db.close()
